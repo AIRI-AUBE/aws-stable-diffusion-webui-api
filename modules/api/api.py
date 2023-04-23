@@ -807,9 +807,10 @@ class Api:
             elif req.task == 'get-upscalers':
                 response = self.get_upscalers()
                 return response
-            elif req.task == 'get-samplers':
-                response = self.get_samplers()
-                return response
+            # useless
+            # elif req.task == 'get-samplers':
+            #     response = self.get_samplers()
+            #     return response
             elif req.task == 'interrogate':
                 response = self.interrogateapi(req.interrogate_payload)
                 return response

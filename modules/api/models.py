@@ -301,6 +301,9 @@ class InvocationsRequest(BaseModel):
     img2img_payload: Optional[StableDiffusionImg2ImgProcessingAPI]
     extras_single_payload: Optional[ExtrasSingleImageRequest]
     extras_batch_payload: Optional[ExtrasBatchImagesRequest]
+    progress_payload:Optional[ProgressRequest]
+    interrogate_payload:Optional[InterrogateRequest]
+    post_options_payload:Optional[]
 
 class InvocationsErrorResponse(BaseModel):
     error: str = Field(title="Invocation error", description="Error response from invocation.")
