@@ -210,7 +210,7 @@ class Api:
         self.add_api_route("/sdapi/v1/unload-checkpoint", self.unloadapi, methods=["POST"])
         self.add_api_route("/sdapi/v1/reload-checkpoint", self.reloadapi, methods=["POST"])
         self.add_api_route("/sdapi/v1/scripts", self.get_scripts_list, methods=["GET"], response_model=ScriptsList)
-        self.add_api_route("/invocations", self.invocations, methods=["POST"], response_model=Union[TextToImageResponse, ImageToImageResponse, ExtrasSingleImageResponse, ExtrasBatchImagesResponse, InvocationsErrorResponse])
+        self.add_api_route("/invocations", self.invocations, methods=["POST"], response_model=Union[TextToImageResponse, ImageToImageResponse, ExtrasSingleImageResponse, ExtrasBatchImagesResponse,MemoryResponse,List[SDModelItem],List[UpscalerItem],OptionsModel,List[SamplerItem],FlagsModel,ProgressResponse])
         self.add_api_route("/ping", self.ping, methods=["GET"], response_model=PingResponse)
 
         self.default_script_arg_txt2img = []
@@ -523,6 +523,9 @@ class Api:
                 options.update({key: shared.opts.data.get(key, None)})
 
         return options
+    
+    def get_all_config(self):
+        return shared.opts.data
 
     def set_config(self, req: Dict[str, Any]):
         for k, v in req.items():
@@ -762,9 +765,11 @@ class Api:
                 shared.reload_hypernetworks()
 
             if req.options != None:
-                options = json.loads(req.options)
+                #here I changed json.loads(req.options) into no need of json.loads()
+                options = req.options
                 for key in options:
                     shared.opts.data[key] = options[key]
+                print(shared.opts.data)
 
             if req.task == 'text-to-image':
                 if embeddings_s3uri != '':
@@ -788,6 +793,41 @@ class Api:
                 response = self.extras_batch_images_api(req.extras_batch_payload)
                 response.images = self.post_invocations(response.images, quality)
                 return response
+            elif req.task == 'set-options':
+                self.set_config(req.post_options_payload)
+                print(req.post_options_payload)
+                print("————————————settings updated———————————")
+                return
+            elif req.task == 'get-options':
+                response = self.get_config()
+                return response
+            elif req.task == 'get-SDmodels':
+                response = self.get_sd_models()
+                return response
+            elif req.task == 'get-upscalers':
+                response = self.get_upscalers()
+                return response
+            elif req.task == 'get-samplers':
+                response = self.get_samplers()
+                return response
+            elif req.task == 'interrogate':
+                response = self.interrogateapi(req.interrogate_payload)
+                return response
+            elif req.task == 'get-memory':
+                response = self.get_memory()
+                return response 
+            elif req.task == 'get-cmd-flags':
+                response = self.get_cmd_flags()
+                return response  
+            elif req.task == 'get-progress':
+                response = self.progressapi(req.progress_payload)
+                return response
+            elif req.task == 'get-all-config':
+                response = self.get_all_config()
+                return response
+            elif req.task == 'do-nothing':
+                print("nothing has happened")
+                return
             else:
                 return InvocationsErrorResponse(error = f'Invalid task - {req.task}')
 
