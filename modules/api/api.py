@@ -793,11 +793,17 @@ class Api:
                 response = self.extras_batch_images_api(req.extras_batch_payload)
                 response.images = self.post_invocations(response.images, quality)
                 return response
+            elif req.task == 'get-progress':
+                response = self.progressapi(req.progress_payload)
+                print("____________getting progress result: ")
+                print(response)
+                return response
             elif req.task == 'set-options':
                 self.set_config(req.post_options_payload)
                 print(req.post_options_payload)
+                print(type(req.post_options_payload))
                 print("————————————settings updated———————————")
-                return
+                return "options has been set"
             elif req.task == 'get-options':
                 response = self.get_config()
                 return response
@@ -820,15 +826,12 @@ class Api:
             elif req.task == 'get-cmd-flags':
                 response = self.get_cmd_flags()
                 return response  
-            elif req.task == 'get-progress':
-                response = self.progressapi(req.progress_payload)
-                return response
             elif req.task == 'get-all-config':
                 response = self.get_all_config()
                 return response
             elif req.task == 'do-nothing':
                 print("nothing has happened")
-                return
+                return "nothing has happened"
             else:
                 return InvocationsErrorResponse(error = f'Invalid task - {req.task}')
 
