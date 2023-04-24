@@ -766,7 +766,7 @@ class Api:
 
             if req.options != None:
                 #here I changed json.loads(req.options) into no need of json.loads()
-                options = json.loads(req.options)
+                options = req.options
                 for key in options:
                     shared.opts.data[key] = options[key]
                 print(shared.opts.data)
