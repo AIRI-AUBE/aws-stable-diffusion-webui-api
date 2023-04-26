@@ -399,6 +399,7 @@ class Api:
             shared.state.end()
 
         b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
+        print('finished encoding images')
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
@@ -813,22 +814,12 @@ class Api:
             elif req.task == 'get-upscalers':
                 response = self.get_upscalers()
                 return response
-            # useless
-            # elif req.task == 'get-samplers':
-            #     response = self.get_samplers()
-            #     return response
-            elif req.task == 'interrogate':
-                response = self.interrogateapi(req.interrogate_payload)
-                return response
             elif req.task == 'get-memory':
                 response = self.get_memory()
                 return response 
             elif req.task == 'get-cmd-flags':
                 response = self.get_cmd_flags()
                 return response  
-            elif req.task == 'get-all-config':
-                response = self.get_all_config()
-                return response
             elif req.task == 'do-nothing':
                 print("nothing has happened")
                 return "nothing has happened"
