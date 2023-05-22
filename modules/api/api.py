@@ -754,7 +754,7 @@ class Api:
 
     def invocations(self, req: InvocationsRequest):
         print('-------invocation------')
-        print_nested_dictionary(req, 50) # this is where debug happens
+        self.print_nested_dictionary(req, 50) # this is where debug happens
 
 
         try:
