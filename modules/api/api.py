@@ -1,6 +1,7 @@
 import base64
 import io
 import time
+import copy
 import datetime
 import uvicorn
 import gradio as gr
@@ -739,10 +740,50 @@ class Api:
             return images
         else:
             return b64images
+    
+    def print_content(self, req: InvocationsRequest):
+        try:
+            new_req = copy.deepcopy(req)
+            if req.img2img_payload != None:
+                new_req.img2img_payload.init_images=['a total of ' + str(len(new_req.img2img_payload.init_images)) + ' images were sent as base 64']
+                print(new_req)
+        except Exception as e:
+            print("printing method did not work, bypassing...error:", e)
+
+    def truncate_content(self, value, limit=200):
+        if isinstance(value, str):  # Only truncate if the value is a string
+            if len(value) > limit:
+                return value[:limit] + '...'
+        return value
+
+    def req_logging(self, obj, indent=0):
+        if "__dict__" in dir(obj):  # if value is an object, dive into it
+            items = obj.__dict__.items()
+        elif isinstance(obj, dict):  # if value is a dictionary, get items
+            items = obj.items()
+        elif isinstance(obj, list):  # if value is a list, enumerate items
+            items = enumerate(obj)
+        else:  # if value is not an object or dict or list, just print it
+            print("  " * indent + f"{self.truncate_content(obj)}")
+            return
+          
+        for attr, value in items:
+            if value is None or value == {} or value == []:
+                continue
+            if isinstance(value, (list, dict)) or "__dict__" in dir(value):
+                print("  " * indent + f"{attr}:")
+                self.req_logging(value, indent + 1)
+            else:
+                print("  " * indent + f"{attr}: {self.truncate_content(value)}")
+
 
     def invocations(self, req: InvocationsRequest):
-        print('-------invocation------')
-        print(req)
+        print('----------------------------invocation---------------------------')
+        # self.print_nested_dictionary(req, 50) # this is where debug happens
+        try:
+            self.req_logging(req)
+        except Exception as e:
+            print("console Log ran into issue: ",e)
 
         try:
             if req.vae != None:
