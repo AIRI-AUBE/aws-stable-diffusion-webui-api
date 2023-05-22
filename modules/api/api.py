@@ -766,7 +766,7 @@ class Api:
                 print("  " * indent + f"{attr}:")
                 self.pretty_print(value, indent + 1)
             else:
-                print("  " * indent + f"{attr}: {truncate_content(value)}")
+                print("  " * indent + f"{attr}: {self.truncate_content(value)}")
 
 
     def invocations(self, req: InvocationsRequest):
