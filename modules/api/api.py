@@ -1,6 +1,7 @@
 import base64
 import io
 import time
+import copy
 import datetime
 import uvicorn
 import gradio as gr
@@ -745,17 +746,36 @@ class Api:
         for key, value in dictionary.items():
             if isinstance(value, dict):
                 print(f"{' ' * indent}{key}:")
-                print_nested_dictionary(value, max_length, indent + 4)
+                self.print_nested_dictionary(value, max_length, indent + 4)
             else:
                 if len(str(value)) > max_length:
                     value = str(value)[:max_length] + '...'
                 print(f"{' ' * indent}{key}: {value}")
 
+    import pprint
+
+    def truncate_content(self, value, limit=50):
+        value = str(value)
+        if len(value) > limit:
+            return value[:limit] + '...'
+        return value
+
+    def pretty_print(self, obj, indent=0):
+        for attr, value in obj.__dict__.items():
+            if "__dict__" in dir(value): # if value is an object, dive into it
+                print("  " * indent + f"{attr}:")
+                self.pretty_print(value, indent + 1)
+            else:
+                print("  " * indent + f"{attr}: {truncate_content(value)}")
+
 
     def invocations(self, req: InvocationsRequest):
         print('-------invocation------')
-        self.print_nested_dictionary(req, 50) # this is where debug happens
-
+        # self.print_nested_dictionary(req, 50) # this is where debug happens
+        try:
+            self.pretty_print(req)
+        except Exception as e:
+            self.print_nested_dictionary(req, 50)
 
         try:
             if req.vae != None:
