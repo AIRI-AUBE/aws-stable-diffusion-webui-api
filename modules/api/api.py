@@ -740,9 +740,22 @@ class Api:
         else:
             return b64images
 
+
+    def print_nested_dictionary(self, dictionary, max_length, indent=0):
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                print(f"{' ' * indent}{key}:")
+                print_nested_dictionary(value, max_length, indent + 4)
+            else:
+                if len(str(value)) > max_length:
+                    value = str(value)[:max_length] + '...'
+                print(f"{' ' * indent}{key}: {value}")
+
+
     def invocations(self, req: InvocationsRequest):
         print('-------invocation------')
-        print(req)
+        print_nested_dictionary(req, 50) # this is where debug happens
+
 
         try:
             if req.vae != None:
