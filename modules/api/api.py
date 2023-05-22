@@ -750,7 +750,7 @@ class Api:
         except Exception as e:
             print("printing method did not work, bypassing...error:", e)
 
-    def truncate_content(self, value, limit=50):
+    def truncate_content(self, value, limit=200):
         value = str(value)
         if len(value) > limit:
             return value[:limit] + '...'
@@ -758,6 +758,8 @@ class Api:
 
     def pretty_print(self, obj, indent=0):
         for attr, value in obj.__dict__.items():
+            if value is None or value == {} or value == []:
+                continue
             if "__dict__" in dir(value): # if value is an object, dive into it
                 print("  " * indent + f"{attr}:")
                 self.pretty_print(value, indent + 1)
@@ -765,7 +767,7 @@ class Api:
                 print("  " * indent + f"{attr}: {self.truncate_content(value)}")
 
     def invocations(self, req: InvocationsRequest):
-        print('-------invocation------')
+        print('----------------------------invocation---------------------------')
         # self.print_nested_dictionary(req, 50) # this is where debug happens
         try:
             self.pretty_print(req)
