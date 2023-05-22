@@ -740,19 +740,15 @@ class Api:
             return images
         else:
             return b64images
-
-
-    def print_nested_dictionary(self, dictionary, max_length, indent=0):
-        for key, value in dictionary.items():
-            if isinstance(value, dict):
-                print(f"{' ' * indent}{key}:")
-                self.print_nested_dictionary(value, max_length, indent + 4)
-            else:
-                if len(str(value)) > max_length:
-                    value = str(value)[:max_length] + '...'
-                print(f"{' ' * indent}{key}: {value}")
-
-    import pprint
+    
+    def print_content(self, req: InvocationsRequest):
+        try:
+            new_req = copy.deepcopy(req)
+            if req.img2img_payload != None:
+                new_req.img2img_payload.init_images=['a total of ' + str(len(new_req.img2img_payload.init_images)) + ' images were sent as base 64']
+                print(new_req)
+        except Exception as e:
+            print("printing method did not work, bypassing...error:", e)
 
     def truncate_content(self, value, limit=50):
         value = str(value)
@@ -768,36 +764,13 @@ class Api:
             else:
                 print("  " * indent + f"{attr}: {self.truncate_content(value)}")
 
-
     def invocations(self, req: InvocationsRequest):
         print('-------invocation------')
         # self.print_nested_dictionary(req, 50) # this is where debug happens
-        try1time = time.time()
         try:
             self.pretty_print(req)
         except Exception as e:
-            print("pretty_print does not work")
-
-        print(f"!!! time consumed for 1 is {time.time()-try1time}")
-
-        try2time = time.time()
-        try:
-            self.print_nested_dictionary(req, 50)
-        except Exception as e:
-            print("item is not a dictionary, does not work")
-
-        print(f"!!! time consumed for 2 is {time.time()-try2time}")
-
-        try3time = time.time()
-        try:
-            new_req = copy.deepcopy(req)
-            if req.img2img_payload != None:
-                new_req.img2img_payload.init_images=['a total of ' + str(len(new_req.img2img_payload.init_images)) + 'images were sent as base 64']
-                print(new_req)
-        except Exception as e:
-            print("deep copy does not work")
-
-        print(f"!!! time consumed for 3 is {time.time()-try3time}")      
+            print("console Log ran into issue: ",e)
 
         try:
             if req.vae != None:
