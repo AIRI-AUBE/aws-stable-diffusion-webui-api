@@ -772,10 +772,32 @@ class Api:
     def invocations(self, req: InvocationsRequest):
         print('-------invocation------')
         # self.print_nested_dictionary(req, 50) # this is where debug happens
+        try1time = time.time()
         try:
             self.pretty_print(req)
         except Exception as e:
+            print("pretty_print does not work")
+
+        print(f"!!! time consumed for 1 is {time.time()-try1time}")
+
+        try2time = time.time()
+        try:
             self.print_nested_dictionary(req, 50)
+        except Exception as e:
+            print("item is not a dictionary, does not work")
+
+        print(f"!!! time consumed for 2 is {time.time()-try2time}")
+
+        try3time = time.time()
+        try:
+            new_req = copy.deepcopy(req)
+            if req.img2img_payload != None:
+                new_req.img2img_payload.init_images=['a total of ' + str(len(new_req.img2img_payload.init_images)) + 'images were sent as base 64']
+                print(new_req)
+        except Exception as e:
+            print("deep copy does not work")
+
+        print(f"!!! time consumed for 3 is {time.time()-try3time}")      
 
         try:
             if req.vae != None:
