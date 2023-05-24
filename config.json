@@ -20,5 +20,6 @@
     "do_not_show_images": true,
     "return_grid": false,
     "show_progress_every_n_steps": 30,
-    "show_progress_type": "Approx cheap"
+    "show_progress_type": "Approx cheap",
+    "upcast_attn": false
 }
