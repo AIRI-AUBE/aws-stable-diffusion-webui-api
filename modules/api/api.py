@@ -751,20 +751,31 @@ class Api:
             print("printing method did not work, bypassing...error:", e)
 
     def truncate_content(self, value, limit=200):
-        value = str(value)
-        if len(value) > limit:
-            return value[:limit] + '...'
+        if isinstance(value, str):  # Only truncate if the value is a string
+            if len(value) > limit:
+                return value[:limit] + '...'
         return value
 
-    def pretty_print(self, obj, indent=0):
-        for attr, value in obj.__dict__.items():
+    def req_logging(self, obj, indent=0):
+        if "__dict__" in dir(obj):  # if value is an object, dive into it
+            items = obj.__dict__.items()
+        elif isinstance(obj, dict):  # if value is a dictionary, get items
+            items = obj.items()
+        elif isinstance(obj, list):  # if value is a list, enumerate items
+            items = enumerate(obj)
+        else:  # if value is not an object or dict or list, just print it
+            print("  " * indent + f"{self.truncate_content(obj)}")
+            return
+          
+        for attr, value in items:
             if value is None or value == {} or value == []:
                 continue
-            if "__dict__" in dir(value): # if value is an object, dive into it
+            if isinstance(value, (list, dict)) or "__dict__" in dir(value):
                 print("  " * indent + f"{attr}:")
-                self.pretty_print(value, indent + 1)
+                self.req_logging(value, indent + 1)
             else:
                 print("  " * indent + f"{attr}: {self.truncate_content(value)}")
+
 
     def invocations(self, req: InvocationsRequest):
         print('----------------------------invocation---------------------------')
