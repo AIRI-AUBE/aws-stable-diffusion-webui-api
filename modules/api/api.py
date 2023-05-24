@@ -781,7 +781,7 @@ class Api:
         print('----------------------------invocation---------------------------')
         # self.print_nested_dictionary(req, 50) # this is where debug happens
         try:
-            self.pretty_print(req)
+            self.req_logging(req)
         except Exception as e:
             print("console Log ran into issue: ",e)
 
