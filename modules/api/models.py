@@ -302,6 +302,7 @@ class InvocationsRequest(BaseModel):
     img2img_payload: Optional[StableDiffusionImg2ImgProcessingAPI]
     extras_single_payload: Optional[ExtrasSingleImageRequest]
     extras_batch_payload: Optional[ExtrasBatchImagesRequest]
+    interrogate_payload: Optional[InterrogateRequest]
     progress_payload:Optional[ProgressRequest]
     post_options_payload:Optional[dict]
 
