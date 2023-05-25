@@ -38,11 +38,6 @@ from modules.paths_internal import script_path
 import uuid
 import os
 import json
-import boto3
-cache = dict()
-s3_client = boto3.client('s3')
-s3_resource= boto3.resource('s3')
-generated_images_s3uri = os.environ.get('generated_images_s3uri', None)
 
 def upscaler_to_index(name: str):
     try:
@@ -106,6 +101,35 @@ def encode_pil_to_base64(image):
         bytes_data = output_bytes.getvalue()
 
     return base64.b64encode(bytes_data)
+
+def export_pil_to_bytes(image):
+    with io.BytesIO() as output_bytes:
+
+        if opts.samples_format.lower() == 'png':
+            use_metadata = False
+            metadata = PngImagePlugin.PngInfo()
+            for key, value in image.info.items():
+                if isinstance(key, str) and isinstance(value, str):
+                    metadata.add_text(key, value)
+                    use_metadata = True
+            image.save(output_bytes, format="PNG", pnginfo=(metadata if use_metadata else None), quality=opts.jpeg_quality)
+
+        elif opts.samples_format.lower() in ("jpg", "jpeg", "webp"):
+            parameters = image.info.get('parameters', None)
+            exif_bytes = piexif.dump({
+                "Exif": { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(parameters or "", encoding="unicode") }
+            })
+            if opts.samples_format.lower() in ("jpg", "jpeg"):
+                image.save(output_bytes, format="JPEG", exif = exif_bytes, quality=opts.jpeg_quality)
+            else:
+                image.save(output_bytes, format="WEBP", exif = exif_bytes, quality=opts.jpeg_quality)
+
+        else:
+            raise HTTPException(status_code=500, detail="Invalid image format")
+
+        bytes_data = output_bytes.getvalue()
+
+    return bytes_data
 
 def api_middleware(app: FastAPI):
     rich_available = True
@@ -211,7 +235,7 @@ class Api:
         self.add_api_route("/sdapi/v1/unload-checkpoint", self.unloadapi, methods=["POST"])
         self.add_api_route("/sdapi/v1/reload-checkpoint", self.reloadapi, methods=["POST"])
         self.add_api_route("/sdapi/v1/scripts", self.get_scripts_list, methods=["GET"], response_model=ScriptsList)
-        self.add_api_route("/invocations", self.invocations, methods=["POST"], response_model=Union[TextToImageResponse, ImageToImageResponse, ExtrasSingleImageResponse, ExtrasBatchImagesResponse,MemoryResponse,List[SDModelItem],List[UpscalerItem],OptionsModel,List[SamplerItem],FlagsModel,ProgressResponse])
+        self.add_api_route("/invocations", self.invocations, methods=["POST"], response_model=Union[TextToImageResponse, ImageToImageResponse, ExtrasSingleImageResponse, ExtrasBatchImagesResponse, InvocationsErrorResponse, InterrogateResponse, MemoryResponse, List[SDModelItem], List[UpscalerItem], OptionsModel, List[SamplerItem], FlagsModel, ProgressResponse])
         self.add_api_route("/ping", self.ping, methods=["GET"], response_model=PingResponse)
 
         self.default_script_arg_txt2img = []
@@ -715,28 +739,21 @@ class Api:
         return MemoryResponse(ram = ram, cuda = cuda)
 
     def post_invocations(self, b64images, quality):
-        if generated_images_s3uri:
-            bucket, key = self.get_bucket_and_key(generated_images_s3uri)
+        if shared.generated_images_s3uri:
+            bucket, key = shared.get_bucket_and_key(shared.generated_images_s3uri)
+            if key.endswith('/'):
+                key = key[ : -1]
             images = []
             for b64image in b64images:
-                image = decode_base64_to_image(b64image).convert('RGB')
-                output = io.BytesIO()
-
-                try:
-                    if not quality:
-                        quality = 95
-
-                    image.save(output, format='PNG', quality=quality)
-                except Exception:
-                    image.save(output, format='PNG', quality=95)
-
-                image_id = str(uuid.uuid4())
-                s3_client.put_object(
-                    Body=output.getvalue(),
+                bytes_data = export_pil_to_bytes(decode_base64_to_image(b64image))
+                image_id = datetime.datetime.now().strftime(f"%Y%m%d%H%M%S-{uuid.uuid4()}")
+                suffix = opts.samples_format.lower()
+                shared.s3_client.put_object(
+                    Body=bytes_data,
                     Bucket=bucket,
-                    Key=f'{key}/{image_id}.png'
+                    Key=f'{key}/{image_id}.{suffix}'
                 )
-                images.append(f's3://{bucket}/{key}/{image_id}.png')
+                images.append(f's3://{bucket}/{key}/{image_id}.{suffix}')
             return images
         else:
             return b64images
@@ -804,7 +821,7 @@ class Api:
             hypernetwork_s3uri = shared.cmd_opts.hypernetwork_s3uri
 
             if hypernetwork_s3uri !='':
-                self.download_s3files(hypernetwork_s3uri, shared.cmd_opts.hypernetwork_dir)
+                shared.s3_download(hypernetwork_s3uri, shared.cmd_opts.hypernetwork_dir)
                 shared.reload_hypernetworks()
 
             if req.options != None:
@@ -816,14 +833,14 @@ class Api:
 
             if req.task == 'text-to-image':
                 if embeddings_s3uri != '':
-                    self.download_s3files(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
+                    shared.s3_download(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
                     sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
                 response = self.text2imgapi(req.txt2img_payload)
                 response.images = self.post_invocations(response.images, quality)
                 return response
             elif req.task == 'image-to-image':
                 if embeddings_s3uri != '':
-                    self.download_s3files(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
+                    shared.s3_download(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
                     sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
                 response = self.img2imgapi(req.img2img_payload)
                 response.images = self.post_invocations(response.images, quality)
@@ -836,6 +853,10 @@ class Api:
                 response = self.extras_batch_images_api(req.extras_batch_payload)
                 response.images = self.post_invocations(response.images, quality)
                 return response
+            elif req.task == 'interrogate':
+                response = self.interrogateapi(req.interrogate_payload)
+                return response
+            
             elif req.task == 'get-progress':
                 response = self.progressapi(req.progress_payload)
                 print("____________getting progress result: ")
@@ -873,44 +894,8 @@ class Api:
             return InvocationsErrorResponse(error = str(e))
 
     def ping(self):
-        print('-------ping------')
         return {'status': 'Healthy'}
 
     def launch(self, server_name, port):
         self.app.include_router(self.router)
         uvicorn.run(self.app, host=server_name, port=port)
-
-    def get_bucket_and_key(self, s3uri):
-        pos = s3uri.find('/', 5)
-        bucket = s3uri[5 : pos]
-        key = s3uri[pos + 1 : ]
-        return bucket, key
-
-    def download_s3files(self, s3uri, path):
-        global cache
-
-        pos = s3uri.find('/', 5)
-        bucket = s3uri[5 : pos]
-        key = s3uri[pos + 1 : ]
-
-        s3_bucket = s3_resource.Bucket(bucket)
-        objs = list(s3_bucket.objects.filter(Prefix=key))
-
-        if os.path.isfile('cache'):
-            cache = json.load(open('cache', 'r'))
-
-        for obj in objs:
-            if obj.key == key:
-                continue
-            response = s3_client.head_object(
-                Bucket = bucket,
-                Key =  obj.key
-            )
-            obj_key = 's3://{0}/{1}'.format(bucket, obj.key)
-            if obj_key not in cache or cache[obj_key] != response['ETag']:
-                filename = obj.key[obj.key.rfind('/') + 1 : ]
-
-                s3_client.download_file(bucket, obj.key, os.path.join(path, filename))
-                cache[obj_key] = response['ETag']
-
-        json.dump(cache, open('cache', 'w'))
