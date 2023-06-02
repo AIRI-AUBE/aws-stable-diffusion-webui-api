@@ -24,6 +24,7 @@ notification.mp3
 .vscode
 /test/stdout.txt
 /test/stderr.txt
+/extensions
 build.info
 models/Stable-diffusion/00v2.1_768-ema-pruned.safetensors
 models/Stable-diffusion/00v2.1_768-ema-pruned.yaml
