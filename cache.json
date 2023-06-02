@@ -1,0 +1,8 @@
+{
+    "hashes": {
+        "checkpoint/00v2.1_768-ema-pruned.safetensors": {
+            "mtime": 1677828186.1021025,
+            "sha256": "4a408d249126880a7cdd6ac8bc0af3dd24da5f6c80ae1429100f31794e4ab7b8"
+        }
+    }
+}
