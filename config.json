@@ -24,5 +24,5 @@
     "upcast_attn": false,
     "sd_model_checkpoint": "00v2.1_768-ema-pruned.safetensors [4a408d2491]",
     "sd_checkpoint_hash": "4a408d249126880a7cdd6ac8bc0af3dd24da5f6c80ae1429100f31794e4ab7b8",
-    "control_net_model_adapter_config": "models\\t2iadapter_sketch_sd14v1.yaml",
+    "control_net_model_adapter_config": "models\\t2iadapter_sketch_sd14v1.yaml"
 }
