@@ -750,7 +750,7 @@ class Api:
         except Exception as e:
             print("printing method did not work, bypassing...error:", e)
 
-    def truncate_content(self, value, limit=200):
+    def truncate_content(self, value, limit=500):
         if isinstance(value, str):  # Only truncate if the value is a string
             if len(value) > limit:
                 return value[:limit] + '...'
