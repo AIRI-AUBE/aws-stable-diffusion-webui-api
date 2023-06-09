@@ -5,7 +5,7 @@
     "control_net_monocular_depth_optim": true,
     "control_net_cfg_based_guidance": true,
     "control_net_control_transfer": true,
-    "control_net_no_detectmap": false,
+    "control_net_no_detectmap": true,
     "control_net_detectmap_autosaving": false,
     "control_net_only_midctrl_hires": true,
     "control_net_allow_script_control": true,
