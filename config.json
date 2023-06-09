@@ -12,17 +12,5 @@
     "control_net_skip_img2img_processing": false,
     "control_net_only_mid_control": false,
     "control_net_sync_field_args": false,
-    "CLIP_stop_at_last_layers": 2,
-    "show_progressbar": false,
-    "live_previews_enable": false,
-    "show_progress_grid": false,
-    "show_progress_in_title": false,
-    "do_not_show_images": true,
-    "return_grid": false,
-    "show_progress_every_n_steps": 30,
-    "show_progress_type": "Approx cheap",
-    "upcast_attn": false,
-    "sd_model_checkpoint": "00v2.1_768-ema-pruned.safetensors [4a408d2491]",
-    "sd_checkpoint_hash": "4a408d249126880a7cdd6ac8bc0af3dd24da5f6c80ae1429100f31794e4ab7b8",
-    "control_net_model_adapter_config": "models\\t2iadapter_sketch_sd14v1.yaml"
+    "CLIP_stop_at_last_layers": 2
 }
