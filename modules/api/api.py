@@ -351,6 +351,19 @@ class Api:
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
+
+        #here I want to add the cn 3-1 transformation
+        if hasattr(img2imgreq, 'cn_3x_image'):
+            img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = img2imgreq.cn_x3_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = img2imgreq.cn_x3_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = img2imgreq.cn_x3_image
+
+        try:
+            print('post cn_3x_image transformation')
+            self.req_logging(img2imgreq)
+        except Exception as e:
+            print("console Log ran into issue: ",e)
+
         mask = img2imgreq.mask
         if mask:
             mask = decode_base64_to_image(mask)
