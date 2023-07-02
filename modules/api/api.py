@@ -353,7 +353,8 @@ class Api:
 
 
         #here I want to add the cn 3-1 transformation
-        if hasattr(img2imgreq, 'cn_3x_image'):
+        if hasattr(img2imgreq, 'cn_3x_image') and img2imgreq.cn_3x_image is not None:
+            print("img2imgreq has attribute cn_3x_image")
             img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = img2imgreq.cn_x3_image
             img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = img2imgreq.cn_x3_image
             img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = img2imgreq.cn_x3_image
