@@ -125,7 +125,6 @@ StableDiffusionImg2ImgProcessingAPI = PydanticModelGenerator(
         {"key": "send_images", "type": bool, "default": True},
         {"key": "save_images", "type": bool, "default": False},
         {"key": "alwayson_scripts", "type": dict, "default": {}},
-        {"key": "cn_3x_image", "type": str, "default": None},
     ]
 ).generate_model()
 
@@ -305,6 +304,7 @@ class InvocationsRequest(BaseModel):
     extras_batch_payload: Optional[ExtrasBatchImagesRequest]
     progress_payload:Optional[ProgressRequest]
     post_options_payload:Optional[dict]
+    cn_x3_image:Optional[str]
 
 class InvocationsErrorResponse(BaseModel):
     error: str = Field(title="Invocation error", description="Error response from invocation.")

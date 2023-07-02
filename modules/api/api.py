@@ -346,24 +346,18 @@ class Api:
 
         return TextToImageResponse(images=b64images, parameters=vars(populate), info=processed.js())
 
-    def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+    def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI, cn_image = ""):
         init_images = img2imgreq.init_images
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
-
         #here I want to add the cn 3-1 transformation
-        if hasattr(img2imgreq, 'cn_3x_image') and img2imgreq.cn_3x_image is not None:
-            print("img2imgreq has attribute cn_3x_image")
-            img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = img2imgreq.cn_x3_image
-            img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = img2imgreq.cn_x3_image
-            img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = img2imgreq.cn_x3_image
-
-        try:
-            print('post cn_3x_image transformation')
-            self.req_logging(img2imgreq)
-        except Exception as e:
-            print("console Log ran into issue: ",e)
+        if cn_image != "":
+            img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = cn_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = cn_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = cn_image
+        else:
+            print("you are using controlnet, cn_image is empty, please check your code")
 
         mask = img2imgreq.mask
         if mask:
@@ -839,7 +833,11 @@ class Api:
                 if embeddings_s3uri != '':
                     self.download_s3files(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
                     sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
-                response = self.img2imgapi(req.img2img_payload)
+                # if controlnet then there is an extra argument to pass, which is the 3-1 change
+                if req.id == 'design_workflow':
+                    response = self.img2imgapi(req.img2img_payload,req.cn_x3_image)
+                else:
+                    response = self.img2imgapi(req.img2img_payload)
                 response.images = self.post_invocations(response.images, quality)
                 return response
             elif req.task == 'extras-single-image':
