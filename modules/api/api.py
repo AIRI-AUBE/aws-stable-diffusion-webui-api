@@ -356,8 +356,6 @@ class Api:
             img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = cn_image
             img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = cn_image
             img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = cn_image
-        else:
-            print("you are using controlnet, cn_image is empty, please check your code")
 
         mask = img2imgreq.mask
         if mask:
@@ -729,7 +727,6 @@ class Api:
             for b64image in b64images:
                 image = decode_base64_to_image(b64image).convert('RGB')
                 output = io.BytesIO()
-
                 try:
                     if not quality:
                         quality = 95
@@ -839,6 +836,15 @@ class Api:
                 else:
                     response = self.img2imgapi(req.img2img_payload)
                 response.images = self.post_invocations(response.images, quality)
+                return response
+            elif req.task == 'upscale_from_feed':
+                #only get the one image (in base64)
+                intermediate_image = self.img2imgapi(req.img2img_payload).images[0]
+                print('finished intermediate img2img')
+                #update the base64 image # note might need to change to req.extras_single_payload['image'] if this does not work
+                req.extras_single_payload.image = intermediate_image
+                response = self.extras_single_image_api(req.extras_single_payload)
+                response.image = self.post_invocations([response.image], quality)[0]
                 return response
             elif req.task == 'extras-single-image':
                 response = self.extras_single_image_api(req.extras_single_payload)
