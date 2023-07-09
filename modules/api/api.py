@@ -839,11 +839,16 @@ class Api:
                 return response
             elif req.task == 'upscale_from_feed':
                 #only get the one image (in base64)
-                intermediate_image = self.img2imgapi(req.img2img_payload).images[0]
+                intermediate_image = self.img2imgapi(req.img2img_payload).images
                 print('finished intermediate img2img')
-                #update the base64 image # note might need to change to req.extras_single_payload['image'] if this does not work
-                req.extras_single_payload.image = intermediate_image
-                response = self.extras_single_image_api(req.extras_single_payload)
+                try:
+                    #update the base64 image # note might need to change to req.extras_single_payload['image'] if this does not work
+                    req.extras_single_payload.image = intermediate_image[0]
+                    response = self.extras_single_image_api(req.extras_single_payload)
+                except Exception as e:
+                    print(f"An error occurred ：{e}, step one upscale failed, reverting to just 4x upscale without Img2Img process")
+                    req.extras_single_payload.upscaling_resize = 4
+                    response = self.extras_single_image_api(req.extras_single_payload)
                 response.image = self.post_invocations([response.image], quality)[0]
                 return response
             elif req.task == 'extras-single-image':
