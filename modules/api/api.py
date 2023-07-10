@@ -1,6 +1,7 @@
 import base64
 import io
 import time
+import copy
 import datetime
 import uvicorn
 import gradio as gr
@@ -345,10 +346,16 @@ class Api:
 
         return TextToImageResponse(images=b64images, parameters=vars(populate), info=processed.js())
 
-    def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+    def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI, cn_image = ""):
         init_images = img2imgreq.init_images
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
+
+        #here I want to add the cn 3-1 transformation
+        if cn_image != "":
+            img2imgreq.alwayson_scripts['controlnet']['args'][0]['image'] = cn_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][1]['image'] = cn_image
+            img2imgreq.alwayson_scripts['controlnet']['args'][2]['image'] = cn_image
 
         mask = img2imgreq.mask
         if mask:
@@ -399,7 +406,6 @@ class Api:
             shared.state.end()
 
         b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
-        print('finished encoding images')
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
@@ -739,10 +745,50 @@ class Api:
             return images
         else:
             return b64images
+    
+    def print_content(self, req: InvocationsRequest):
+        try:
+            new_req = copy.deepcopy(req)
+            if req.img2img_payload != None:
+                new_req.img2img_payload.init_images=['a total of ' + str(len(new_req.img2img_payload.init_images)) + ' images were sent as base 64']
+                print(new_req)
+        except Exception as e:
+            print("printing method did not work, bypassing...error:", e)
+
+    def truncate_content(self, value, limit=1000):
+        if isinstance(value, str):  # Only truncate if the value is a string
+            if len(value) > limit:
+                return value[:limit] + '...'
+        return value
+
+    def req_logging(self, obj, indent=0):
+        if "__dict__" in dir(obj):  # if value is an object, dive into it
+            items = obj.__dict__.items()
+        elif isinstance(obj, dict):  # if value is a dictionary, get items
+            items = obj.items()
+        elif isinstance(obj, list):  # if value is a list, enumerate items
+            items = enumerate(obj)
+        else:  # if value is not an object or dict or list, just print it
+            print("  " * indent + f"{self.truncate_content(obj)}")
+            return
+          
+        for attr, value in items:
+            if value is None or value == {} or value == []:
+                continue
+            if isinstance(value, (list, dict)) or "__dict__" in dir(value):
+                print("  " * indent + f"{attr}:")
+                self.req_logging(value, indent + 1)
+            else:
+                print("  " * indent + f"{attr}: {self.truncate_content(value)}")
+
 
     def invocations(self, req: InvocationsRequest):
-        print('-------invocation------')
-        print(req)
+        print('----------------------------invocation---------------------------')
+        # self.print_nested_dictionary(req, 50) # this is where debug happens
+        try:
+            self.req_logging(req)
+        except Exception as e:
+            print("console Log ran into issue: ",e)
 
         try:
             if req.vae != None:
@@ -784,8 +830,24 @@ class Api:
                 if embeddings_s3uri != '':
                     self.download_s3files(embeddings_s3uri, shared.cmd_opts.embeddings_dir)
                     sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
-                response = self.img2imgapi(req.img2img_payload)
+                # if controlnet then there is an extra argument to pass, which is the 3-1 change
+                if req.id == 'design_workflow':
+                    response = self.img2imgapi(req.img2img_payload,req.cn_x3_image)
+                else:
+                    response = self.img2imgapi(req.img2img_payload)
                 response.images = self.post_invocations(response.images, quality)
+                return response
+            elif req.task == 'upscale_from_feed':
+                #only get the one image (in base64)
+                intermediate_image = self.img2imgapi(req.img2img_payload).images
+                print('finished intermediate img2img')
+                try:
+                    #update the base64 image # note might need to change to req.extras_single_payload['image'] if this does not work
+                    req.extras_single_payload.image = intermediate_image[0]
+                    response = self.extras_single_image_api(req.extras_single_payload)
+                except Exception as e: # this is in fact obselete, because there will be a earlier return if OOM, won't reach here, but leaving here just in case
+                    print(f"An error occurred: {e}, step one upscale failed, reverting to just 4x upscale without Img2Img process")
+                response.image = self.post_invocations([response.image], quality)[0]
                 return response
             elif req.task == 'extras-single-image':
                 response = self.extras_single_image_api(req.extras_single_payload)
