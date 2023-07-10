@@ -304,6 +304,7 @@ class InvocationsRequest(BaseModel):
     extras_batch_payload: Optional[ExtrasBatchImagesRequest]
     progress_payload:Optional[ProgressRequest]
     post_options_payload:Optional[dict]
+    cn_x3_image:Optional[str]
 
 class InvocationsErrorResponse(BaseModel):
     error: str = Field(title="Invocation error", description="Error response from invocation.")
