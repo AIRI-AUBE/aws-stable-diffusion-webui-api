@@ -406,7 +406,6 @@ class Api:
             shared.state.end()
 
         b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
-        print('finished encoding images')
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
@@ -727,6 +726,7 @@ class Api:
             for b64image in b64images:
                 image = decode_base64_to_image(b64image).convert('RGB')
                 output = io.BytesIO()
+
                 try:
                     if not quality:
                         quality = 95
@@ -845,10 +845,8 @@ class Api:
                     #update the base64 image # note might need to change to req.extras_single_payload['image'] if this does not work
                     req.extras_single_payload.image = intermediate_image[0]
                     response = self.extras_single_image_api(req.extras_single_payload)
-                except Exception as e:
-                    print(f"An error occurred ：{e}, step one upscale failed, reverting to just 4x upscale without Img2Img process")
-                    req.extras_single_payload.upscaling_resize = 4
-                    response = self.extras_single_image_api(req.extras_single_payload)
+                except Exception as e: # this is in fact obselete, because there will be a earlier return if OOM, won't reach here, but leaving here just in case
+                    print(f"An error occurred: {e}, step one upscale failed, reverting to just 4x upscale without Img2Img process")
                 response.image = self.post_invocations([response.image], quality)[0]
                 return response
             elif req.task == 'extras-single-image':
